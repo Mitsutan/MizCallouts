@@ -12,6 +12,7 @@
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+    <Version>1.0</Version>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -30,6 +31,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="LSPD First Response">
@@ -55,4 +57,20 @@
     <Compile Include="Settings.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="AutoPackage" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <Message Text="📦 配布用パッケージとZIPファイルを自動生成しています..." Importance="high" />
+    <MakeDir Directories="$(TargetDir)ReleasePackage\plugins\LSPDFR\MizCallouts" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(TargetDir)ReleasePackage\plugins\LSPDFR\" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFolder="$(TargetDir)ReleasePackage\Plugins\LSPDFR\" />
+    <Copy SourceFiles="$(ProjectDir)MizCallouts\MizCallouts.ini" DestinationFolder="$(TargetDir)ReleasePackage\plugins\LSPDFR\MizCallouts\" />
+    <Copy SourceFiles="$(ProjectDir)MizCallouts\BabyDriver.ini" DestinationFolder="$(TargetDir)ReleasePackage\plugins\LSPDFR\MizCallouts\" />
+    <Copy SourceFiles="$(ProjectDir)README.md" DestinationFolder="$(TargetDir)ReleasePackage\" />
+    <ItemGroup>
+      <OldZipFiles Include="$(TargetDir)MizCallouts_*.zip" />
+    </ItemGroup>
+    <Delete Files="@(OldZipFiles)" />
+    <Exec Command="powershell -NoProfile -NonInteractive -Command &quot;Compress-Archive -Path '$(TargetDir)ReleasePackage\*' -DestinationPath '$(TargetDir)MizCallouts_v$(Version).zip' -Force&quot;" />
+    <RemoveDir Directories="$(TargetDir)ReleasePackage" />
+    <Message Text="✅ ZIPパッケージの作成が完了しました！ [ 出力先: $(TargetDir)MizCallouts_v$(Version).zip ]" Importance="high" />
+  </Target>
 </Project>
