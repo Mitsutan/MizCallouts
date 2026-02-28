@@ -82,7 +82,7 @@ namespace MizCallouts.Callouts
             shooters[1].Accuracy = 1;
 
             this.ShowCalloutAreaBlipBeforeAccepting(spawnPoint, 30f);
-            this.AddMinimumDistanceCheck(20f, spawnPoint);
+            this.AddMinimumDistanceCheck(50f, spawnPoint);
 
             this.CalloutMessage = Settings.BabyDriver.ReadString(currentLanguage, "CalloutMessage", "銀行にて非常通報ベル鳴動");
             this.CalloutPosition = spawnPoint;
