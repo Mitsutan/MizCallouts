@@ -84,7 +84,7 @@ namespace MizCallouts.Callouts
             this.ShowCalloutAreaBlipBeforeAccepting(spawnPoint, 30f);
             this.AddMinimumDistanceCheck(50f, spawnPoint);
 
-            this.CalloutMessage = Settings.BabyDriver.ReadString(currentLanguage, "CalloutMessage", "銀行にて非常通報ベル鳴動");
+            this.CalloutMessage = Settings.BabyDriver.ReadString(currentLanguage, "CalloutMessage");
             this.CalloutPosition = spawnPoint;
 
             Functions.PlayScannerAudio("ATTENTION_ALL_UNITS WE_HAVE CRIME_ARMED_ROBBERY IN_OR_ON_POSITION UNITS_RESPOND_CODE_03");
@@ -184,7 +184,7 @@ namespace MizCallouts.Callouts
             // 追跡開始
             if (pursuit == null && Game.LocalPlayer.Character.DistanceTo(vehicle) < 40f) StartPursuit();
 
-            if (driver.IsDead || (vehicle.Speed < 1f && !IsDriving(driver) && pursuit != null))
+            if (driver.IsDead)
             {
                 if (shooters[0].IsInAnyVehicle(false)) shooters[0].Tasks.LeaveVehicle(LeaveVehicleFlags.LeaveDoorOpen);
                 if (shooters[1].IsInAnyVehicle(false)) shooters[1].Tasks.LeaveVehicle(LeaveVehicleFlags.LeaveDoorOpen);
@@ -202,14 +202,6 @@ namespace MizCallouts.Callouts
                 this.End();
                 return;
             }
-        }
-
-        private static bool IsDriving(Ped ped)
-        {
-            if (!ped.Exists()) return false;
-
-            bool d = NativeFunction.Natives.GET_IS_TASK_ACTIVE<bool>(ped, 169);
-            return d;
         }
 
         public override void End()

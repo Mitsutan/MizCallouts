@@ -19,6 +19,7 @@ namespace MizCallouts
                 InitializationFile mainIni = new InitializationFile(mainIniPath);
                 mainIni.Create();
                 CurrentLanguage = mainIni.ReadString("Settings", "Language", "en");
+                Game.LogTrivial("[MizCallouts] 言語設定 [" + CurrentLanguage + "] で読み込みが完了しました。");
             }
             else
             {
@@ -29,6 +30,7 @@ namespace MizCallouts
             string babydriverIniPath = "Plugins/LSPDFR/MizCallouts/BabyDriver.ini";
             if (System.IO.File.Exists(babydriverIniPath))
             {
+                Game.LogTrivial("[MizCallouts] BabyDriver.ini を読み込みます...");
                 BabyDriver = new InitializationFile(babydriverIniPath);
                 BabyDriver.Create();
             }
@@ -38,7 +40,6 @@ namespace MizCallouts
                 throw new System.IO.FileNotFoundException("BabyDriver.ini が見つかりませんでした。");
             }
 
-            Game.LogTrivial("[MizCallouts] 言語設定 [" + CurrentLanguage + "] で読み込みが完了しました。");
         }
     }
 }
