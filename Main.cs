@@ -1,6 +1,5 @@
 ﻿using LSPD_First_Response.Mod.API;
 using Rage;
-using System;
 
 namespace MizCallouts
 {
@@ -23,7 +22,8 @@ namespace MizCallouts
 
         public override void Finally()
         {
-            throw new NotImplementedException();
+            Functions.OnOnDutyStateChanged -= OnOnDutyStateChangedHandler;
+            Game.LogTrivial("[MizCallouts] Plugin unloaded.");
         }
     }
 }
