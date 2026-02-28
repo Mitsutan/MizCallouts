@@ -17,7 +17,7 @@ namespace MizCallouts
             if (onDuty)
             {
                 Functions.RegisterCallout(typeof(Callouts.BabyDriver));
-                Game.DisplayNotification("MyFirstCallout loaded successfully!");
+                Game.DisplayNotification("[MizCallouts] Callout loaded successfully!");
             }
         }
 
