@@ -43,12 +43,11 @@ namespace MizCallouts.Callouts
             targetBank = bankLocations.OrderBy(bank => bank.DistanceTo(Game.LocalPlayer.Character.Position)).First();
             Vector3 spawnPoint = World.GetNextPositionOnStreet(targetBank.Around(30f));
 
-            Vector3 streetCenter;
-            float streetHeading;
-            NativeFunction.Natives.GET_CLOSEST_VEHICLE_NODE_WITH_HEADING(targetBank.X, targetBank.Y, targetBank.Z, out streetCenter, out streetHeading, 1, 3, 0);
-            NativeFunction.Natives.GET_SAFE_COORD_FOR_PED(targetBank.X, targetBank.Y, targetBank.Z, true, out streetCenter, 16);
+            NativeFunction.Natives.GET_CLOSEST_VEHICLE_NODE_WITH_HEADING(spawnPoint.X, spawnPoint.Y, spawnPoint.Z, out Vector3 streetCenter, out float streetHeading, 1, 3, 0);
+            //NativeFunction.Natives.GET_SAFE_COORD_FOR_PED(targetBank.X, targetBank.Y, targetBank.Z, true, out streetCenter, 16);
 
-            vehicle = new Vehicle("SULTAN", streetCenter, streetHeading);
+            //vehicle = new Vehicle("SULTAN", streetCenter, streetHeading);
+            vehicle = new Vehicle("SULTAN", spawnPoint, streetHeading);
             if (!vehicle.Exists()) return false;
 
             vehicle.Position = vehicle.Position + (vehicle.RightVector * 2.0f);
