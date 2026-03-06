@@ -3,6 +3,7 @@ using LSPD_First_Response.Mod.Callouts;
 using Rage;
 using Rage.Native;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 
 namespace MizCallouts.Callouts
@@ -19,7 +20,10 @@ namespace MizCallouts.Callouts
         private Vehicle vehicle;
         private bool isRunningAway = false;
 
+        private bool isOnScene = false;
+
         private Vector3 targetBank;
+        private Vector3 spawnPoint;
         private int alarmSoundId = -1;
 
         private Blip suspectBlip;
@@ -41,45 +45,7 @@ namespace MizCallouts.Callouts
         public override bool OnBeforeCalloutDisplayed()
         {
             targetBank = bankLocations.OrderBy(bank => bank.DistanceTo(Game.LocalPlayer.Character.Position)).First();
-            Vector3 spawnPoint = World.GetNextPositionOnStreet(targetBank.Around(30f));
-
-            NativeFunction.Natives.GET_CLOSEST_VEHICLE_NODE_WITH_HEADING(spawnPoint.X, spawnPoint.Y, spawnPoint.Z, out Vector3 streetCenter, out float streetHeading, 1, 3, 0);
-            //NativeFunction.Natives.GET_SAFE_COORD_FOR_PED(targetBank.X, targetBank.Y, targetBank.Z, true, out streetCenter, 16);
-
-            //vehicle = new Vehicle("SULTAN", streetCenter, streetHeading);
-            vehicle = new Vehicle("SULTAN", spawnPoint, streetHeading);
-            if (!vehicle.Exists()) return false;
-
-            vehicle.Position = vehicle.Position + (vehicle.RightVector * 2.0f);
-            NativeFunction.Natives.SET_VEHICLE_ON_GROUND_PROPERLY(vehicle);
-
-            vehicle.Mods.InstallModKit();
-            NativeFunction.Natives.SET_VEHICLE_MOD(vehicle, 16, 2, false);// armor
-            NativeFunction.Natives.SET_VEHICLE_MOD(vehicle, 0, 0, false);
-            NativeFunction.Natives.SET_VEHICLE_WHEEL_TYPE(vehicle, 0);
-            NativeFunction.Natives.SET_VEHICLE_MOD(vehicle, 23, 7, false);
-            NativeFunction.Natives.SET_VEHICLE_EXTRA_COLOURS(vehicle, 27, 20);
-            NativeFunction.Natives.SET_VEHICLE_COLOURS(vehicle, 27, 27);
-
-            // spawn driver
-            driver = new Ped("a_m_y_ktown_01", spawnPoint, 0f);
-            if (!driver.Exists()) return false;
-            driver.WarpIntoVehicle(vehicle, -1);// -1 is the driver seat
-
-            // spawn shooters
-            shooters[0] = new Ped("a_f_y_bevhills_03", spawnPoint, 0f);
-            if (!shooters[0].Exists()) return false;
-            shooters[0].Armor = 100;
-            shooters[0].WarpIntoVehicle(vehicle, 1);// 1 is the rear left seat
-            shooters[0].Inventory.GiveNewWeapon("WEAPON_MICROSMG", -1, true);
-            shooters[0].Accuracy = 1;
-
-            shooters[1] = new Ped("a_m_y_smartcaspat_01", spawnPoint, 0f);
-            if (!shooters[1].Exists()) return false;
-            shooters[1].Armor = 100;
-            shooters[1].WarpIntoVehicle(vehicle, 2);// 2 is the rear right seat
-            shooters[1].Inventory.GiveNewWeapon("WEAPON_MICROSMG", -1, true);
-            shooters[1].Accuracy = 1;
+            spawnPoint = World.GetNextPositionOnStreet(targetBank.Around(30f));
 
             this.ShowCalloutAreaBlipBeforeAccepting(spawnPoint, 30f);
             this.AddMinimumDistanceCheck(50f, spawnPoint);
@@ -96,12 +62,13 @@ namespace MizCallouts.Callouts
         {
             base.OnCalloutAccepted();
 
-            if (vehicle.Exists())
+            suspectBlip = new Blip(spawnPoint, 150f)
             {
-                suspectBlip = vehicle.AttachBlip();
-                suspectBlip.Color = System.Drawing.Color.Red;
-                suspectBlip.IsRouteEnabled = true;
-            }
+                Alpha = 0.5f,
+                Color = Color.Red,
+                IsRouteEnabled = true
+            };
+            
             return true;
         }
 
@@ -120,7 +87,43 @@ namespace MizCallouts.Callouts
         {
             base.Process();
 
-            if (!driver.Exists() || !vehicle.Exists() || !shooters[0].Exists() || !shooters[1].Exists())
+            if (!isOnScene)
+            {
+                if (Game.LocalPlayer.Character.DistanceTo(targetBank) < 200f)
+                {
+                    isOnScene = CreateScene(spawnPoint);
+                    // アラーム音を鳴らす
+                    if (alarmSoundId == -1)
+                    {
+                        alarmSoundId = NativeFunction.Natives.GET_SOUND_ID<int>();
+                        Game.LogTrivial("[BabyDriver] Sound ID for alarm: " + alarmSoundId);
+
+                        GameFiber.StartNew(() =>
+                        {
+                            uint GameTimeStarted = Game.GameTime;
+
+                            // "Alarms"バンクが完全にメモリに乗るまで待機（最大2秒）
+                            while (!NativeFunction.Natives.REQUEST_SCRIPT_AUDIO_BANK<bool>("Alarms", false, -1) && Game.GameTime - GameTimeStarted <= 2000)
+                            {
+                                GameFiber.Yield();
+                            }
+
+                            NativeFunction.Natives.PLAY_SOUND_FROM_COORD(
+                                alarmSoundId,
+                                "Burglar_Bell",
+                                targetBank.X, targetBank.Y, targetBank.Z,
+                                "Generic_Alarms",
+                                false, 0, false
+                            );
+                        });
+                    }
+                    return;
+                }
+                return;
+            }
+            
+
+            if (isOnScene && (!driver.Exists() || !vehicle.Exists() || !shooters[0].Exists() || !shooters[1].Exists()))
             {
                 this.End();
                 return;
@@ -148,36 +151,10 @@ namespace MizCallouts.Callouts
             // 車両の性能を上げる（これにより、追跡が難しくなります）
             NativeFunction.Natives.SET_VEHICLE_CHEAT_POWER_INCREASE(vehicle, 1.1f);
 
-            // アラーム音を鳴らす
-            if (alarmSoundId == -1 && Game.LocalPlayer.Character.DistanceTo(targetBank) < 200f)
-            {
-                alarmSoundId = NativeFunction.Natives.GET_SOUND_ID<int>();
-                Game.LogTrivial("[BabyDriver] Sound ID for alarm: " + alarmSoundId);
-
-                GameFiber.StartNew(() =>
-                {
-                    uint GameTimeStarted = Game.GameTime;
-
-                    // "Alarms"バンクが完全にメモリに乗るまで待機（最大2秒）
-                    while (!NativeFunction.Natives.REQUEST_SCRIPT_AUDIO_BANK<bool>("Alarms", false, -1) && Game.GameTime - GameTimeStarted <= 2000)
-                    {
-                        GameFiber.Yield();
-                    }
-
-                    NativeFunction.Natives.PLAY_SOUND_FROM_COORD(
-                        alarmSoundId,
-                        "Burglar_Bell",
-                        targetBank.X, targetBank.Y, targetBank.Z,
-                        "Generic_Alarms",
-                        false, 0, false
-                    );
-                });
-            }
-
             // 逃走開始
             if (pursuit == null && Game.LocalPlayer.Character.DistanceTo(vehicle) < 100f && !isRunningAway)
             {
-                driver.Tasks.CruiseWithVehicle(35f, VehicleDrivingFlags.DriveAroundObjects | VehicleDrivingFlags.DriveAroundVehicles);
+                driver.Tasks.CruiseWithVehicle(40f, VehicleDrivingFlags.DriveAroundObjects | VehicleDrivingFlags.DriveAroundVehicles);
                 isRunningAway = true;
             }
 
@@ -230,6 +207,52 @@ namespace MizCallouts.Callouts
                 playerVehicle.CanTiresBurst = true;
                 Game.LogTrivial("[BabyDriver] プレイヤー車両のタイヤの防弾設定を解除しました。");
             }
+        }
+
+        private bool CreateScene(Vector3 spawnPoint)
+        {
+            NativeFunction.Natives.GET_CLOSEST_VEHICLE_NODE_WITH_HEADING(spawnPoint.X, spawnPoint.Y, spawnPoint.Z, out Vector3 streetCenter, out float streetHeading, 1, 3, 0);
+            //NativeFunction.Natives.GET_SAFE_COORD_FOR_PED(targetBank.X, targetBank.Y, targetBank.Z, true, out streetCenter, 16);
+
+            //vehicle = new Vehicle("SULTAN", streetCenter, streetHeading);
+            vehicle = new Vehicle("SULTAN", spawnPoint, streetHeading);
+            if (!vehicle.Exists()) return false;
+
+            if (suspectBlip.Exists()) suspectBlip.Delete();
+            suspectBlip = vehicle.AttachBlip();
+
+            vehicle.Position = vehicle.Position + (vehicle.RightVector * 2.0f);
+            NativeFunction.Natives.SET_VEHICLE_ON_GROUND_PROPERLY(vehicle);
+
+            vehicle.Mods.InstallModKit();
+            NativeFunction.Natives.SET_VEHICLE_MOD(vehicle, 16, 2, false);// armor
+            NativeFunction.Natives.SET_VEHICLE_MOD(vehicle, 0, 0, false);
+            NativeFunction.Natives.SET_VEHICLE_WHEEL_TYPE(vehicle, 0);
+            NativeFunction.Natives.SET_VEHICLE_MOD(vehicle, 23, 7, false);
+            NativeFunction.Natives.SET_VEHICLE_EXTRA_COLOURS(vehicle, 27, 20);
+            NativeFunction.Natives.SET_VEHICLE_COLOURS(vehicle, 27, 27);
+
+            // spawn driver
+            driver = new Ped("a_m_y_ktown_01", spawnPoint, 0f);
+            if (!driver.Exists()) return false;
+            driver.WarpIntoVehicle(vehicle, -1);// -1 is the driver seat
+
+            // spawn shooters
+            shooters[0] = new Ped("a_f_y_bevhills_03", spawnPoint, 0f);
+            if (!shooters[0].Exists()) return false;
+            shooters[0].Armor = 100;
+            shooters[0].WarpIntoVehicle(vehicle, 1);// 1 is the rear left seat
+            shooters[0].Inventory.GiveNewWeapon("WEAPON_MICROSMG", -1, true);
+            shooters[0].Accuracy = 1;
+
+            shooters[1] = new Ped("a_m_y_smartcaspat_01", spawnPoint, 0f);
+            if (!shooters[1].Exists()) return false;
+            shooters[1].Armor = 100;
+            shooters[1].WarpIntoVehicle(vehicle, 2);// 2 is the rear right seat
+            shooters[1].Inventory.GiveNewWeapon("WEAPON_MICROSMG", -1, true);
+            shooters[1].Accuracy = 1;
+
+            return true;
         }
 
         private void StartPursuit()
