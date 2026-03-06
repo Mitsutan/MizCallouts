@@ -211,7 +211,7 @@ namespace MizCallouts.Callouts
 
         private bool CreateScene(Vector3 spawnPoint)
         {
-            NativeFunction.Natives.GET_CLOSEST_VEHICLE_NODE_WITH_HEADING(spawnPoint.X, spawnPoint.Y, spawnPoint.Z, out Vector3 streetCenter, out float streetHeading, 1, 3, 0);
+            NativeFunction.Natives.GET_CLOSEST_VEHICLE_NODE_WITH_HEADING(spawnPoint.X, spawnPoint.Y, spawnPoint.Z, out Vector3 _, out float streetHeading, 1, 3, 0);
             //NativeFunction.Natives.GET_SAFE_COORD_FOR_PED(targetBank.X, targetBank.Y, targetBank.Z, true, out streetCenter, 16);
 
             //vehicle = new Vehicle("SULTAN", streetCenter, streetHeading);
