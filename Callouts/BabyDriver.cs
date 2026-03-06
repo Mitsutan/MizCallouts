@@ -92,6 +92,13 @@ namespace MizCallouts.Callouts
                 if (Game.LocalPlayer.Character.DistanceTo(targetBank) < 200f)
                 {
                     isOnScene = CreateScene(spawnPoint);
+                    if (!isOnScene)
+                    {
+                        Game.DisplayNotification("~r~Error~w~: Failed to create the scene. Ending callout.");
+                        this.End();
+                        return;
+                    }
+
                     // アラーム音を鳴らす
                     if (alarmSoundId == -1)
                     {
