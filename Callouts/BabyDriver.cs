@@ -18,7 +18,7 @@ namespace MizCallouts.Callouts
 
         readonly string currentLanguage = Settings.CurrentLanguage;
         Vehicle playerVehicle = Player.CurrentVehicle;
-        static Ped Player => Player;
+        static Ped Player => Game.LocalPlayer.Character;
 
         Ped driver;
         Ped[] shooters = new Ped[2];
