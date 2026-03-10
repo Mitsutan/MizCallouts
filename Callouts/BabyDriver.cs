@@ -1,4 +1,4 @@
-// Tips by Yasd, I hope I could help a bit, feel free to ask more questions :)
+// Tips by Yasd, Thank you for your help!
 
 using LSPD_First_Response.Mod.API;
 using LSPD_First_Response.Mod.Callouts;
@@ -14,8 +14,6 @@ namespace MizCallouts.Callouts
 
     internal class BabyDriver : Callout
     {
-        // I removed all private... because its the same without writing private, looks cleaner
-
         readonly string currentLanguage = Settings.CurrentLanguage;
         Vehicle playerVehicle = Player.CurrentVehicle;
         static Ped Player => Game.LocalPlayer.Character;
@@ -24,13 +22,11 @@ namespace MizCallouts.Callouts
         Ped[] shooters = new Ped[2];
         Vehicle vehicle;
 
-        //  I removed = false because a bool is fals eby default, just looks cleaner
         bool isRunningAway;
 
         bool isOnScene;
 
         Vector3 targetBank;
-        // I removed spawnPoint, its useless to use it, we already have this.CalloutPosition instead which comes with the Callout itself
         int alarmSoundId = -1;
 
         Blip suspectBlip;
@@ -133,14 +129,12 @@ namespace MizCallouts.Callouts
                     }
                     return;
                 }
-                // unnessessary return; call
             }
 
 
             if (isOnScene && (!driver || !vehicle || !shooters[0] || !shooters[1]))
             {
                 this.End();
-                // again no return;
             }
 
             if (Player.IsInAnyVehicle(false))
@@ -201,7 +195,6 @@ namespace MizCallouts.Callouts
             {
                 Functions.PlayScannerAudio("ATTENTION_DISPATCH WE_ARE_CODE_4 NO_FURTHER_UNITS_REQUIRED");
                 this.End();
-                //return;
             }
 
             base.Process();
