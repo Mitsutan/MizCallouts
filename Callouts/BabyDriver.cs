@@ -93,7 +93,7 @@ namespace MizCallouts.Callouts
             {
                 if (Player.DistanceTo(targetBank) < 200f)
                 {
-                    isOnScene = CreateScene(this.CalloutPosition);
+                    isOnScene = CreateScene();
                     if (!isOnScene)
                     {
                         Game.DisplayNotification("~r~Error~w~: Failed to create the scene. Ending callout.");
@@ -228,7 +228,7 @@ namespace MizCallouts.Callouts
             base.End();
         }
 
-        bool CreateScene(Vector3 calloutPos)
+        bool CreateScene()
         {
             NativeFunction.Natives.GET_CLOSEST_VEHICLE_NODE_WITH_HEADING(this.CalloutPosition, out Vector3 _, out float streetHeading, 1, 3, 0);
             //NativeFunction.Natives.GET_SAFE_COORD_FOR_PED(targetBank.X, targetBank.Y, targetBank.Z, true, out streetCenter, 16);
