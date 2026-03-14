@@ -36,13 +36,13 @@ namespace MizCallouts.Callouts
         // 銀行の座標リスト
         readonly List<Vector3> bankLocations = new List<Vector3>()
         {
-            new Vector3(253.9f, 226.3f, 101.6f),    // パシフィック・スタンダード銀行（バインウッド）
-            new Vector3(146.5f, -1044.8f, 29.3f),   // フリーカ銀行（レジオン・スクエア近く）
-            new Vector3(-354.1f, -54.3f, 49.0f),    // フリーカ銀行（ハウィック）
-            new Vector3(311.5f, -283.6f, 54.1f),    // フリーカ銀行（アルタ）
-            new Vector3(1176.4f, 2712.8f, 38.0f),   // フリーカ銀行（ルート68・ハーモニー）
-            new Vector3(-2956.6f, 481.3f, 15.6f),   // フリーカ銀行（グレート・オーシャン・ハイウェイ）
-            new Vector3(-109.8f, 6464.9f, 31.6f)    // ブレイン郡貯蓄銀行（パレト・ベイ）
+            new Vector3(231.5119f, 215.0855f, 106.2802f),// パシフィック・スタンダード銀行（バインウッド）
+            new Vector3(150.9131f, -1037.258f, 29.33927f),// フリーカ銀行（レジオン・スクエア近く）
+            new Vector3(-349.7284f, -46.26683f, 49.03683f),// フリーカ銀行（ハウィック）
+            new Vector3(315.5833f, -275.8853f, 53.92448f),// フリーカ銀行（アルタ）
+            new Vector3(1175.242f, 2703.066f, 38.17268f),// フリーカ銀行（ルート68・ハーモニー）
+            new Vector3(-2966.194f, 482.478f, 15.69272f),// フリーカ銀行（グレート・オーシャン・ハイウェイ）
+            new Vector3(-110.9397f, 6462.727f, 31.64072f),// ブレイン郡貯蓄銀行（パレト・ベイ）
         };
 
         public override bool OnBeforeCalloutDisplayed()
@@ -54,7 +54,6 @@ namespace MizCallouts.Callouts
             this.AddMinimumDistanceCheck(50f, this.CalloutPosition);
 
             this.CalloutMessage = Settings.BabyDriver.ReadString(currentLanguage, "CalloutMessage");
-            this.CalloutPosition = this.CalloutPosition;
 
             Functions.PlayScannerAudio("ATTENTION_ALL_UNITS WE_HAVE CRIME_ARMED_ROBBERY IN_OR_ON_POSITION UNITS_RESPOND_CODE_03");
 
@@ -100,6 +99,19 @@ namespace MizCallouts.Callouts
                         this.End();
                         // you dont need to call return; here, when calling end Process() wont run anymore
                     }
+
+                    // music
+                    GameFiber.StartNew(() =>
+                    {
+                        uint GameTimeStarted = Game.GameTime;
+
+                        while (!NativeFunction.Natives.PREPARE_MUSIC_EVENT<bool>("FH2A_GETAWAY_DRIVE_MA") && Game.GameTime - GameTimeStarted <= 2000)
+                        {
+                            GameFiber.Yield();
+                        }
+
+                        NativeFunction.Natives.TRIGGER_MUSIC_EVENT("FH2A_GETAWAY_DRIVE_MA");
+                    });
 
                     // アラーム音を鳴らす
                     if (alarmSoundId == -1)
@@ -170,6 +182,7 @@ namespace MizCallouts.Callouts
             // the same here with the vehicle as above
             if (pursuit == null && vehicle && Player.DistanceTo(vehicle) < 100f && !isRunningAway)
             {
+                NativeFunction.Natives.SET_GAMEPLAY_VEHICLE_HINT(vehicle, 0f, 0f, 0f, true, 2500, 2000, 2000);
                 if (driver) // using if driver for safety reasons :)
                     driver.Tasks.CruiseWithVehicle(40f, VehicleDrivingFlags.DriveAroundObjects | VehicleDrivingFlags.DriveAroundVehicles);
                 isRunningAway = true;
@@ -202,6 +215,8 @@ namespace MizCallouts.Callouts
 
         public override void End()
         {
+            //Events.OnPursuitPedHasVisualChanged -= VisualLostHandler;
+
             if (alarmSoundId != -1)
             {
                 NativeFunction.Natives.STOP_SOUND(alarmSoundId);
@@ -273,11 +288,21 @@ namespace MizCallouts.Callouts
 
             return true;
         }
+        
+        //private void VisualLostHandler(LHandle pursuitHandle, Ped ped, bool hasVisual, bool justChanged)
+        //{
+        //    if (ped.Equals(driver))
+        //    {
+        //        Game.DisplaySubtitle("[BabyDriver] IsPedVisualLostLonger: " + Functions.IsPedVisualLostLonger(driver));
+        //        //Game.LogTrivial("[BabyDriver] IsPedVisualLost: " + Functions.IsPedVisualLost(driver));
+        //        //Game.DisplaySubtitle("[BabyDriver] OnPursuitPedHasVisualChanged: hasVisual: " + hasVisual + ", justChanged: " + justChanged, 5000);
+        //    }
+        //}
 
         void StartPursuit()
         {
+            //Events.OnPursuitPedHasVisualChanged += VisualLostHandler;
             if (suspectBlip) suspectBlip.Delete();
-
 
             pursuit = Functions.CreatePursuit();
             Functions.SetPursuitAsCalledIn(pursuit, true);
